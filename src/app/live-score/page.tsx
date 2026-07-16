@@ -23,7 +23,8 @@ import {
   Play, 
   Clock, 
   ListOrdered,
-  AlertTriangle
+  AlertTriangle,
+  Users
 } from "lucide-react";
 
 interface LiveMatch {
@@ -35,6 +36,11 @@ interface LiveMatch {
   tournament: string;
   captain: string;
   viceCaptain: string;
+  wicketKeeper?: string;
+  opponentCaptain?: string;
+  opponentViceCaptain?: string;
+  opponentWicketKeeper?: string;
+  dismissals?: any[];
   tossWinner: string;
   batFirst: boolean; // true if Stars bat first, false if opponent bats first
   playingXI: string[];
@@ -71,11 +77,20 @@ const mockLiveMatch: LiveMatch = {
   tournament: "Mumbai Club T20 Championship",
   captain: "Rohan Sharma",
   viceCaptain: "Amit Tendulkar",
+  wicketKeeper: "MS Dhoni",
+  opponentCaptain: "B. Stokes",
+  opponentViceCaptain: "J. Buttler",
+  opponentWicketKeeper: "J. Buttler",
   tossWinner: "Sachin Stars",
   batFirst: true,
   playingXI: ["Rohan Sharma", "Amit Tendulkar", "Karan Johar", "Sanjay Patel", "Vikram Kumar", "Devendra Jha", "Anil Kumble", "Zaheer Khan", "Harbhajan Singh", "Javagal Srinath", "MS Dhoni"],
   opponentXI: ["J. Root", "J. Bairstow", "B. Stokes", "J. Buttler", "L. Livingstone", "M. Ali", "S. Curran", "C. Woakes", "A. Rashid", "J. Archer", "M. Wood"],
   status: "live",
+  dismissals: [
+    { batsman: "Anil Kumble", type: "Caught", fielder: "J. Buttler", bowler: "J. Archer", over: 12, ball: 4 },
+    { batsman: "Zaheer Khan", type: "Bowled", bowler: "M. Wood", over: 14, ball: 1 },
+    { batsman: "Harbhajan Singh", type: "Run Out", fielder: "B. Stokes", over: 15, ball: 5 },
+  ],
   runs: 148,
   wickets: 3,
   overs: 16,
@@ -370,6 +385,134 @@ export default function LiveScorePage() {
                   })}
                 </div>
               </div>
+
+              {/* Squads Panel */}
+              <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800/60">
+                <h3 className="text-xs font-black uppercase text-[#0A3D91] dark:text-[#D9ECFF] tracking-wider mb-4 flex items-center">
+                  <Users size={14} className="mr-1.5 text-[#FF6B00]" />
+                  Playing XIs
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Sachin Stars Squad */}
+                  <div className="p-4 rounded-xl bg-slate-500/5 border border-slate-200 dark:border-slate-800/50 space-y-3">
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+                      <span className="font-extrabold text-[#0A3D91] dark:text-white text-xs">
+                        Sachin Stars
+                      </span>
+                      <span className="text-[9px] bg-[#0A3D91] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                        Stars
+                      </span>
+                    </div>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {activeMatch.playingXI && activeMatch.playingXI.map((name) => {
+                        const isCaptain = activeMatch.captain === name;
+                        const isVC = activeMatch.viceCaptain === name;
+                        const isWK = activeMatch.wicketKeeper === name;
+                        return (
+                          <li key={name} className="flex items-center justify-between p-2 rounded-lg bg-white/40 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40">
+                            <span className="font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
+                              {name}
+                            </span>
+                            <div className="flex items-center space-x-1 shrink-0">
+                              {isCaptain && (
+                                <span className="px-1.5 py-0.5 text-[8px] font-black bg-blue-500 text-white rounded cursor-default" title="Captain">
+                                  C
+                                </span>
+                              )}
+                              {isVC && (
+                                <span className="px-1.5 py-0.5 text-[8px] font-black bg-indigo-500 text-white rounded cursor-default" title="Vice-Captain">
+                                  VC
+                                </span>
+                              )}
+                              {isWK && (
+                                <span className="px-1.5 py-0.5 text-[8px] font-black bg-[#FF6B00] text-white rounded cursor-default" title="Wicketkeeper">
+                                  WK
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+
+                  {/* Opponent Squad */}
+                  <div className="p-4 rounded-xl bg-slate-500/5 border border-slate-200 dark:border-slate-800/50 space-y-3">
+                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+                      <span className="font-extrabold text-slate-700 dark:text-white text-xs truncate max-w-[150px]">
+                        {activeMatch.opponent}
+                      </span>
+                      <span className="text-[9px] bg-slate-400 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                        OPP
+                      </span>
+                    </div>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {activeMatch.opponentXI && activeMatch.opponentXI.map((name) => {
+                        const isCaptain = activeMatch.opponentCaptain === name;
+                        const isVC = activeMatch.opponentViceCaptain === name;
+                        const isWK = activeMatch.opponentWicketKeeper === name;
+                        return (
+                          <li key={name} className="flex items-center justify-between p-2 rounded-lg bg-white/40 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40">
+                            <span className="font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
+                              {name}
+                            </span>
+                            <div className="flex items-center space-x-1 shrink-0">
+                              {isCaptain && (
+                                <span className="px-1.5 py-0.5 text-[8px] font-black bg-blue-500 text-white rounded cursor-default" title="Captain">
+                                  C
+                                </span>
+                              )}
+                              {isVC && (
+                                <span className="px-1.5 py-0.5 text-[8px] font-black bg-indigo-500 text-white rounded cursor-default" title="Vice-Captain">
+                                  VC
+                                </span>
+                              )}
+                              {isWK && (
+                                <span className="px-1.5 py-0.5 text-[8px] font-black bg-[#FF6B00] text-white rounded cursor-default" title="Wicketkeeper">
+                                  WK
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fall of Wickets Panel */}
+              {activeMatch.dismissals && activeMatch.dismissals.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800/60">
+                  <h3 className="text-xs font-black uppercase text-[#FF6B00] tracking-wider mb-4 flex items-center">
+                    <ListOrdered size={14} className="mr-1.5 text-red-500" />
+                    Fall of Wickets
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {activeMatch.dismissals.map((d: any, idx: number) => {
+                      let details = "";
+                      if (d.type === "Bowled") details = `b. ${d.bowler}`;
+                      else if (d.type === "LBW") details = `lbw b. ${d.bowler}`;
+                      else if (d.type === "Caught") details = `c. ${d.fielder || "fielder"} b. ${d.bowler}`;
+                      else if (d.type === "Stumped") details = `st. ${d.fielder || "keeper"} b. ${d.bowler}`;
+                      else if (d.type === "Caught & Bowled") details = `c&b. ${d.bowler}`;
+                      else if (d.type === "Run Out") details = `run out (${d.fielder || "fielder"})`;
+                      else details = `${d.type.toLowerCase()}`;
+                      
+                      return (
+                        <div key={idx} className="p-3 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/40 text-xs flex flex-col justify-between">
+                          <div className="font-bold text-slate-800 dark:text-white flex justify-between items-center mb-1">
+                            <span>{idx + 1}. {d.batsman}</span>
+                            <span className="text-[9px] bg-red-500/10 text-red-500 px-1.5 py-0.25 rounded font-black uppercase">{d.type}</span>
+                          </div>
+                          <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">{details}</p>
+                          <p className="text-[9px] text-slate-400 mt-2 text-right">Over {d.over}.{d.ball}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>

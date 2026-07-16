@@ -26,6 +26,10 @@ interface MatchDetails {
   tournament: string;
   captain: string;
   viceCaptain: string;
+  wicketKeeper?: string;
+  opponentCaptain?: string;
+  opponentViceCaptain?: string;
+  opponentWicketKeeper?: string;
   playingXI: string[];
   opponentXI: string[];
   tossWinner: string;
@@ -58,6 +62,8 @@ export default function AdminScoringPage() {
   const [isWicketModalOpen, setIsWicketModalOpen] = useState(false);
   const [outBatsman, setOutBatsman] = useState("");
   const [incomingBatsman, setIncomingBatsman] = useState("");
+  const [dismissalType, setDismissalType] = useState("Bowled");
+  const [assistingFielder, setAssistingFielder] = useState("");
 
   // Mistake Logger Popup State
   const [isMistakeOpen, setIsMistakeOpen] = useState(false);
@@ -233,6 +239,8 @@ export default function AdminScoringPage() {
   const openWicketSelection = () => {
     setOutBatsman(match.striker.name);
     setIncomingBatsman("");
+    setDismissalType("Bowled");
+    setAssistingFielder("");
     setIsWicketModalOpen(true);
   };
 
@@ -263,6 +271,47 @@ export default function AdminScoringPage() {
 
     // Update match overs
     updated = recordBallDetails(updated, true);
+
+    // Update Player DB directly for catches/runOuts if assistingFielder is set
+    if (assistingFielder) {
+      try {
+        const q = query(collection(db, "players"), where("name", "==", assistingFielder));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const playerDoc = snap.docs[0];
+          const data = playerDoc.data();
+          const currentStats = data.stats || {};
+          
+          if (dismissalType === "Caught" || dismissalType === "Stumped" || dismissalType === "Caught & Bowled") {
+            const currentCatches = currentStats.catches || 0;
+            await updateDoc(doc(db, "players", playerDoc.id), {
+              "stats.catches": currentCatches + 1,
+            });
+            toast.success(`Incremented catches stat for ${assistingFielder}`);
+          } else if (dismissalType === "Run Out") {
+            const currentRunOuts = currentStats.runOuts || 0;
+            await updateDoc(doc(db, "players", playerDoc.id), {
+              "stats.runOuts": currentRunOuts + 1,
+            });
+            toast.success(`Incremented run outs stat for ${assistingFielder}`);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to update player stats for dismissal:", err);
+      }
+    }
+
+    // Save dismissal detail to match document
+    const newDismissal = {
+      batsman: outBatsman,
+      type: dismissalType,
+      fielder: assistingFielder || null,
+      bowler: updated.bowler.name,
+      over: updated.overs,
+      ball: updated.balls,
+    };
+    const currentDismissals = (updated as any).dismissals || [];
+    (updated as any).dismissals = [...currentDismissals, newDismissal];
 
     // Replace out batsman with incoming batsman
     if (outBatsman === updated.striker.name) {
@@ -649,6 +698,96 @@ export default function AdminScoringPage() {
           </div>
         </div>
 
+        {/* Squads Panel */}
+        <div className="glass-panel p-6 rounded-2xl border border-white/20 shadow-md">
+          <h3 className="text-xs font-black uppercase text-[#0A3D91] dark:text-[#D9ECFF] tracking-wider mb-4">
+            Match Squads & Designations
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Stars Squad */}
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-1 flex justify-between">
+                <span>Sachin Stars</span>
+                <span className="text-[10px] text-slate-400">Roster</span>
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {match.playingXI.map(name => {
+                  const isCaptain = match.captain === name;
+                  const isVC = match.viceCaptain === name;
+                  const isWK = match.wicketKeeper === name;
+                  return (
+                    <div key={name} className="flex items-center justify-between p-1.5 bg-slate-500/5 rounded-lg text-xs">
+                      <span className="truncate max-w-[120px] font-medium text-slate-700 dark:text-slate-300">{name}</span>
+                      <div className="flex space-x-0.5 shrink-0">
+                        {isCaptain && <span className="px-1 text-[8px] bg-blue-500 text-white rounded font-black">C</span>}
+                        {isVC && <span className="px-1 text-[8px] bg-indigo-500 text-white rounded font-black">VC</span>}
+                        {isWK && <span className="px-1 text-[8px] bg-[#FF6B00] text-white rounded font-black">WK</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Opponent Squad */}
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-1 flex justify-between">
+                <span>{match.opponent}</span>
+                <span className="text-[10px] text-slate-400">Roster</span>
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {match.opponentXI.map(name => {
+                  const isCaptain = match.opponentCaptain === name;
+                  const isVC = match.opponentViceCaptain === name;
+                  const isWK = match.opponentWicketKeeper === name;
+                  return (
+                    <div key={name} className="flex items-center justify-between p-1.5 bg-slate-500/5 rounded-lg text-xs">
+                      <span className="truncate max-w-[120px] font-medium text-slate-700 dark:text-slate-300">{name}</span>
+                      <div className="flex space-x-0.5 shrink-0">
+                        {isCaptain && <span className="px-1 text-[8px] bg-blue-500 text-white rounded font-black">C</span>}
+                        {isVC && <span className="px-1 text-[8px] bg-indigo-500 text-white rounded font-black">VC</span>}
+                        {isWK && <span className="px-1 text-[8px] bg-[#FF6B00] text-white rounded font-black">WK</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fall of Wickets Panel */}
+        {(match as any).dismissals && (match as any).dismissals.length > 0 && (
+          <div className="glass-panel p-6 rounded-2xl border border-white/20 shadow-md animate-fade-in">
+            <h3 className="text-xs font-black uppercase text-[#FF6B00] tracking-wider mb-4">
+              Fall of Wickets
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {(match as any).dismissals.map((d: any, idx: number) => {
+                let details = "";
+                if (d.type === "Bowled") details = `b. ${d.bowler}`;
+                else if (d.type === "LBW") details = `lbw b. ${d.bowler}`;
+                else if (d.type === "Caught") details = `c. ${d.fielder || "fielder"} b. ${d.bowler}`;
+                else if (d.type === "Stumped") details = `st. ${d.fielder || "keeper"} b. ${d.bowler}`;
+                else if (d.type === "Caught & Bowled") details = `c&b. ${d.bowler}`;
+                else if (d.type === "Run Out") details = `run out (${d.fielder || "fielder"})`;
+                else details = `${d.type.toLowerCase()}`;
+                
+                return (
+                  <div key={idx} className="p-3 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/40 text-xs flex flex-col justify-between">
+                    <div className="font-bold text-slate-800 dark:text-white flex justify-between items-center mb-1">
+                      <span>{idx + 1}. {d.batsman}</span>
+                      <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.25 rounded font-black uppercase">{d.type}</span>
+                    </div>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">{details}</p>
+                    <p className="text-[9px] text-slate-400 mt-2 text-right">Over {d.over}.{d.ball}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Modal: Wicket Dismissal configuration */}
         {isWicketModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -671,6 +810,54 @@ export default function AdminScoringPage() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dismissal Type</label>
+                  <select
+                    value={dismissalType}
+                    onChange={(e) => {
+                      setDismissalType(e.target.value);
+                      if (e.target.value !== "Caught" && e.target.value !== "Stumped" && e.target.value !== "Run Out") {
+                        setAssistingFielder("");
+                      }
+                    }}
+                    className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none dark:text-white"
+                  >
+                    <option value="Bowled">Bowled</option>
+                    <option value="Caught">Caught</option>
+                    <option value="LBW">LBW</option>
+                    <option value="Run Out">Run Out</option>
+                    <option value="Stumped">Stumped</option>
+                    <option value="Hit Wicket">Hit Wicket</option>
+                    <option value="Caught & Bowled">Caught & Bowled</option>
+                    <option value="Retired Hurt">Retired Hurt</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {(dismissalType === "Caught" || dismissalType === "Stumped" || dismissalType === "Run Out") && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Assisted By (Fielder)</label>
+                    <select
+                      value={assistingFielder}
+                      onChange={(e) => setAssistingFielder(e.target.value)}
+                      className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none dark:text-white"
+                    >
+                      <option value="">-- None / Opponent --</option>
+                      {match.playingXI.map((name) => {
+                        const isCaptain = match.captain === name;
+                        const isVC = match.viceCaptain === name;
+                        const isWK = match.wicketKeeper === name;
+                        const roleLabel = isCaptain ? " (C)" : isVC ? " (VC)" : isWK ? " (WK)" : "";
+                        return (
+                          <option key={name} value={name}>
+                            {name}{roleLabel}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+
+                <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Incoming Batsman</label>
                   <select
                     value={incomingBatsman}
@@ -678,9 +865,17 @@ export default function AdminScoringPage() {
                     className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none dark:text-white"
                   >
                     <option value="">-- Choose Batsman --</option>
-                    {remainingBatsmen.map((name) => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
+                    {remainingBatsmen.map((name) => {
+                      const isCaptain = match.captain === name;
+                      const isVC = match.viceCaptain === name;
+                      const isWK = match.wicketKeeper === name;
+                      const roleLabel = isCaptain ? " (C)" : isVC ? " (VC)" : isWK ? " (WK)" : "";
+                      return (
+                        <option key={name} value={name}>
+                          {name}{roleLabel}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -725,9 +920,17 @@ export default function AdminScoringPage() {
                     onChange={(e) => setMistakePlayer(e.target.value)}
                     className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none dark:text-white font-semibold"
                   >
-                    {match.playingXI.map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
+                    {match.playingXI.map(name => {
+                      const isCaptain = match.captain === name;
+                      const isVC = match.viceCaptain === name;
+                      const isWK = match.wicketKeeper === name;
+                      const roleLabel = isCaptain ? " (C)" : isVC ? " (VC)" : isWK ? " (WK)" : "";
+                      return (
+                        <option key={name} value={name}>
+                          {name}{roleLabel}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

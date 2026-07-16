@@ -41,30 +41,30 @@ const playerSchema = z.object({
   role: z.string().min(1, "Role is required"),
   jerseyNumber: z.string().min(1, "Jersey number is required"),
   age: z.string().min(1, "Age is required"),
-  battingStyle: z.string().default("Right-hand bat"),
-  bowlingStyle: z.string().default("Right-arm bowler"),
+  battingStyle: z.string(),
+  bowlingStyle: z.string(),
   debut: z.string().min(4, "Enter debut year"),
   phone: z.string().optional(),
   email: z.string().email("Enter valid email"),
   photo: z.string().optional(),
   // Stats
-  runs: z.coerce.number().default(0),
-  wickets: z.coerce.number().default(0),
-  average: z.coerce.number().default(0),
-  strikeRate: z.coerce.number().default(0),
-  matches: z.coerce.number().default(0),
-  fifties: z.coerce.number().default(0),
-  hundreds: z.coerce.number().default(0),
-  highestScore: z.coerce.number().default(0),
-  economy: z.coerce.number().default(0),
-  catches: z.coerce.number().default(0),
-  runOuts: z.coerce.number().default(0),
-  droppedCatches: z.coerce.number().default(0),
-  mistakesCount: z.coerce.number().default(0),
-  rating: z.coerce.number().min(0).max(100).default(60),
+  runs: z.coerce.number(),
+  wickets: z.coerce.number(),
+  average: z.coerce.number(),
+  strikeRate: z.coerce.number(),
+  matches: z.coerce.number(),
+  fifties: z.coerce.number(),
+  hundreds: z.coerce.number(),
+  highestScore: z.coerce.number(),
+  economy: z.coerce.number(),
+  catches: z.coerce.number(),
+  runOuts: z.coerce.number(),
+  droppedCatches: z.coerce.number(),
+  mistakesCount: z.coerce.number(),
+  rating: z.coerce.number().min(0).max(100),
 });
 
-type PlayerFormValues = z.infer<typeof playerSchema>;
+type PlayerFormValues = z.input<typeof playerSchema>;
 
 interface PlayerProfile {
   id: string;

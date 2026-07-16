@@ -1,4 +1,4 @@
-import { adminAuth, adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { adminAuth, adminDb, hasAdminCredentials, adminInitializationError } from "@/lib/firebase-admin";
 
 /**
  * Verifies that the request contains a valid Firebase ID token 
@@ -6,7 +6,11 @@ import { adminAuth, adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
  */
 export async function verifyAdmin(request: Request) {
   if (!hasAdminCredentials) {
-    throw new Error("Firebase Admin SDK credentials are not configured in your .env.local file. Please check your credentials configurations.");
+    throw new Error("Firebase Admin SDK credentials are not configured in your environment variables. Please check your credentials configurations.");
+  }
+
+  if (adminInitializationError || !adminAuth || !adminDb) {
+    throw new Error(`Firebase Admin SDK failed to initialize: ${adminInitializationError || "check your private key and other configuration variables"}`);
   }
 
   const authHeader = request.headers.get("Authorization");

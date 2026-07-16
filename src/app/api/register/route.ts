@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
-import { adminAuth, adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { adminAuth, adminDb, hasAdminCredentials, adminInitializationError } from "@/lib/firebase-admin";
 
 // POST register admin (Public endpoint)
 export async function POST(request: Request) {
   if (!hasAdminCredentials) {
     return NextResponse.json(
-      { error: "Firebase Admin SDK credentials are not configured in your .env.local file. Please retrieve your service account key from the Firebase Console." },
+      { error: "Firebase Admin SDK credentials are not configured in your environment variables. Please retrieve your service account key from the Firebase Console." },
+      { status: 500 }
+    );
+  }
+
+  if (adminInitializationError || !adminAuth || !adminDb) {
+    return NextResponse.json(
+      { error: `Firebase Admin SDK failed to initialize: ${adminInitializationError || "check your private key and other configuration variables"}` },
       { status: 500 }
     );
   }

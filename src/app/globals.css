@@ -1,0 +1,241 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-blue: #1D4ED8; /* Indian Royal Blue */
+  --color-brand-dark: #0B132B; /* Deep Navy Blue */
+  --color-brand-orange: #FF671F; /* Indian Saffron */
+  --color-brand-green: #046A38; /* Indian Green */
+  --color-brand-light: #EFF6FF; /* Fresh Blue-100 */
+  
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-spin-slow: spin 8s linear infinite;
+  
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --background: #F4F7FC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --border: #E2E8F0;
+}
+
+.dark {
+  --background: #080D1A; /* Premium Deep Indian Navy */
+  --foreground: #F8FAFC;
+  --card: #0F172A; /* Slate Card */
+  --card-foreground: #F8FAFC;
+  --border: #1E293B;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(29, 78, 216, 0.15); /* Jersey Blue tint border */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.45) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .glass-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(8, 13, 26, 0.6) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(29, 78, 216, 0.15);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  border-color: rgba(255, 103, 31, 0.4); /* Indian Saffron hover border */
+  box-shadow: 0 20px 25px -5px rgba(29, 78, 216, 0.15), 0 10px 10px -5px rgba(255, 103, 31, 0.1);
+}
+
+.dark .glass-card:hover {
+  border-color: rgba(255, 103, 31, 0.5); /* Indian Saffron hover border */
+  box-shadow: 0 25px 35px -10px rgba(0, 0, 0, 0.5), 0 10px 20px -5px rgba(29, 78, 216, 0.2);
+}
+
+/* Premium Button Styling */
+.btn-primary {
+  position: relative;
+  background: linear-gradient(135deg, #1D4ED8 0%, #1E3A8A 100%); /* Vibrant Indian Royal Blue */
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(29, 78, 216, 0.45);
+  filter: brightness(1.15);
+}
+
+.btn-primary:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-orange {
+  background: linear-gradient(135deg, #FF671F 0%, #EA580C 100%); /* Indian Saffron */
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(255, 103, 31, 0.3);
+}
+
+.btn-orange:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(255, 103, 31, 0.45);
+  filter: brightness(1.15);
+}
+
+.btn-orange:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Tricolor Stripe Detailing */
+.tricolor-stripe {
+  background: linear-gradient(to right, #FF671F 33.3%, #FFFFFF 33.3%, #FFFFFF 66.6%, #046A38 66.6%);
+  height: 4px;
+  width: 100%;
+}
+
+/* Cricbuzz Style Timeline Elements */
+.timeline-dot {
+  position: relative;
+}
+.timeline-dot::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #FF671F; /* Saffron dot */
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(29, 78, 216, 0.2);
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 103, 31, 0.15);
+}
+
+/* Advanced Sports Theme Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+
+@keyframes gradient-mesh {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.bg-mesh-animated {
+  background-size: 200% 200%;
+  animation: gradient-mesh 15s ease infinite;
+}
+
+/* Custom card animations on view entry */
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: slide-up-fade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 103, 31, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 103, 31, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 103, 31, 0);
+  }
+}
+
+.live-glow-tag {
+  box-shadow: 0 0 12px rgba(255, 103, 31, 0.5);
+  animation: live-pulse 1.8s infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.bg-jersey-shift {
+  background: linear-gradient(270deg, #080D1A, #0F1D3A, #080D1A);
+  background-size: 200% 200%;
+  animation: gradient-shift 10s ease infinite;
+}

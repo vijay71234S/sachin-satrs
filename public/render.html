@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+    #pdf-canvas {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+</head>
+<body>
+  <canvas id="pdf-canvas"></canvas>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    
+    pdfjsLib.getDocument('/logo.pdf').promise.then(pdf => {
+      return pdf.getPage(1);
+    }).then(page => {
+      const canvas = document.getElementById('pdf-canvas');
+      const context = canvas.getContext('2d');
+      
+      const desiredWidth = 1000;
+      const viewport = page.getViewport({ scale: 1 });
+      const scale = desiredWidth / viewport.width;
+      const scaledViewport = page.getViewport({ scale: scale });
+      
+      canvas.width = scaledViewport.width;
+      canvas.height = scaledViewport.height;
+      
+      const renderContext = {
+        canvasContext: context,
+        viewport: scaledViewport
+      };
+      
+      return page.render(renderContext).promise;
+    }).then(() => {
+      console.log('PDF_RENDER_COMPLETE');
+      window.pdfRenderComplete = true;
+    }).catch(err => {
+      console.error('Render error:', err);
+    });
+  </script>
+</body>
+</html>

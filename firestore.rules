@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is logged in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user is authenticated and not disabled
+    function isNotDisabled() {
+      return isAuthenticated() && (
+        !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('disabled', false) != true
+      );
+    }
+
+    // Helper function to check if user has Admin role and is not disabled
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'member') == 'admin' &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('disabled', false) != true;
+    }
+
+    // Rules for matches collection
+    match /matches/{matchId} {
+      allow read: if isNotDisabled();
+      allow write: if isAdmin();
+    }
+
+    // Rules for players collection
+    match /players/{playerId} {
+      allow read: if isNotDisabled();
+      allow write: if isAdmin();
+    }
+
+    // Rules for mistake logs collection
+    match /mistake_logs/{logId} {
+      allow read: if isNotDisabled();
+      allow write: if isAdmin();
+    }
+
+    // Special rules for the users collection
+    match /users/{userId} {
+      // Users can read their own profile (so client can detect disabled status), Admins can read all profiles
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Only Admins can write user profiles
+      allow write: if isAdmin();
+    }
+
+    // Rules for settings collection
+    match /settings/{settingsId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Deny read/write by default for other collections/paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

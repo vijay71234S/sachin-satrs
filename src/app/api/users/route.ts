@@ -113,7 +113,20 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("API POST User error:", error);
     const errorMessage = error?.message || "Failed to create user";
-    const status = errorMessage.includes("Forbidden") ? 403 : errorMessage.includes("Unauthorized") ? 401 : 500;
+    let status = 500;
+    if (errorMessage.includes("Forbidden")) {
+      status = 403;
+    } else if (errorMessage.includes("Unauthorized")) {
+      status = 401;
+    } else if (
+      error?.code === "auth/email-already-exists" ||
+      error?.code === "auth/phone-number-already-exists" ||
+      error?.code === "auth/invalid-phone-number" ||
+      error?.code === "auth/invalid-email" ||
+      error?.code === "auth/invalid-password"
+    ) {
+      status = 400;
+    }
     return NextResponse.json(
       { error: errorMessage },
       { status }

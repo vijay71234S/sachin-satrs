@@ -103,9 +103,19 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error("API POST Admin Register error:", error);
+    let status = 500;
+    if (
+      error?.code === "auth/email-already-exists" ||
+      error?.code === "auth/phone-number-already-exists" ||
+      error?.code === "auth/invalid-phone-number" ||
+      error?.code === "auth/invalid-email" ||
+      error?.code === "auth/invalid-password"
+    ) {
+      status = 400;
+    }
     return NextResponse.json(
       { error: error.message || "Failed to register admin account" },
-      { status: 500 }
+      { status }
     );
   }
 }

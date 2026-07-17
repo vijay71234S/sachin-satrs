@@ -1,11 +1,11 @@
 const http = require("http");
 
 const data = JSON.stringify({
-  email: "test-admin@sachinstars.com",
+  email: `test-admin-${Date.now()}@sachinstars.com`,
   password: "testpassword123",
   playerName: "Test Coach",
-  phoneNumber: "+919999999999",
-  playerId: "SS-TEST"
+  phoneNumber: "+919876543210",
+  playerId: `SS-TEST-${Math.floor(Math.random() * 1000)}`
 });
 
 console.log("Sending registration request to localhost:3000...");

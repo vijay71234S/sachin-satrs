@@ -11,11 +11,9 @@ const data = JSON.stringify({
 const options = {
   hostname: "sachinstars.vercel.app",
   port: 443,
-  path: "/api/register",
-  method: "POST",
+  path: "/api/debug-env",
+  method: "GET",
   headers: {
-    "Content-Type": "application/json",
-    "Content-Length": data.length,
     "User-Agent": "Mozilla/5.0"
   }
 };
@@ -36,5 +34,4 @@ req.on("error", (e) => {
   console.error("Request failed:", e);
 });
 
-req.write(data);
 req.end();

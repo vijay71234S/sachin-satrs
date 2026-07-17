@@ -66,11 +66,18 @@ export default function RegisterPage() {
         body: JSON.stringify(data),
       });
 
-      const resData = await response.json();
-
       if (!response.ok) {
-        throw new Error(resData.error || "Registration failed");
+        let errorMsg = "Registration failed";
+        try {
+          const resData = await response.json();
+          errorMsg = resData.error || errorMsg;
+        } catch {
+          errorMsg = `Server Error: Request failed with status ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
+
+      const resData = await response.json();
 
       // 2. Sign in locally using Firebase Auth client SDK
       await signInWithEmailAndPassword(auth, data.email, data.password);

@@ -77,7 +77,7 @@ export default function CreateUserPage() {
       });
       
       if (!response.ok) {
-        throw new Error("Failed to fetch user accounts");
+        throw new Error(`Failed to fetch user accounts (Status ${response.status})`);
       }
       
       const data = await response.json();
@@ -147,11 +147,18 @@ export default function CreateUserPage() {
         body: JSON.stringify(data),
       });
 
-      const resData = await response.json();
-      
       if (!response.ok) {
-        throw new Error(resData.error || "Failed to create user account");
+        let errorMsg = "Failed to create user account";
+        try {
+          const errData = await response.json();
+          errorMsg = errData.error || errorMsg;
+        } catch {
+          errorMsg = `Server Error: Request failed with status ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
+
+      const resData = await response.json();
 
       toast.success(`Account created for ${data.playerName}!`);
       reset();
@@ -179,11 +186,18 @@ export default function CreateUserPage() {
         body: JSON.stringify(data),
       });
 
-      const resData = await response.json();
-      
       if (!response.ok) {
-        throw new Error(resData.error || "Failed to update profile");
+        let errorMsg = "Failed to update profile";
+        try {
+          const errData = await response.json();
+          errorMsg = errData.error || errorMsg;
+        } catch {
+          errorMsg = `Server Error: Request failed with status ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
+
+      const resData = await response.json();
 
       toast.success("Profile updated successfully!");
       setEditingUser(null);
@@ -212,8 +226,14 @@ export default function CreateUserPage() {
       });
 
       if (!response.ok) {
-        const resData = await response.json();
-        throw new Error(resData.error || "Failed to delete account");
+        let errorMsg = "Failed to delete account";
+        try {
+          const resData = await response.json();
+          errorMsg = resData.error || errorMsg;
+        } catch {
+          errorMsg = `Server Error: Request failed with status ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
 
       toast.success("Account deleted successfully.");
@@ -245,8 +265,14 @@ export default function CreateUserPage() {
       });
 
       if (!response.ok) {
-        const resData = await response.json();
-        throw new Error(resData.error || "Failed to alter account status");
+        let errorMsg = "Failed to alter account status";
+        try {
+          const resData = await response.json();
+          errorMsg = resData.error || errorMsg;
+        } catch {
+          errorMsg = `Server Error: Request failed with status ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
 
       toast.success(`Account status modified successfully.`);
@@ -277,8 +303,14 @@ export default function CreateUserPage() {
       });
 
       if (!response.ok) {
-        const resData = await response.json();
-        throw new Error(resData.error || "Failed to change password");
+        let errorMsg = "Failed to change password";
+        try {
+          const resData = await response.json();
+          errorMsg = resData.error || errorMsg;
+        } catch {
+          errorMsg = `Server Error: Request failed with status ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
 
       toast.success(`Password updated for ${changingPasswordUser.playerName}!`);

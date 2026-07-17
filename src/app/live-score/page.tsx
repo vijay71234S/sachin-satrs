@@ -45,6 +45,8 @@ interface LiveMatch {
   batFirst: boolean; // true if Stars bat first, false if opponent bats first
   playingXI: string[];
   opponentXI: string[];
+  substitutes?: string[];
+  opponentSubs?: string[];
   status: "live" | "completed" | "upcoming";
   // Scores
   runs: number;
@@ -85,6 +87,8 @@ const mockLiveMatch: LiveMatch = {
   batFirst: true,
   playingXI: ["Rohan Sharma", "Amit Tendulkar", "Karan Johar", "Sanjay Patel", "Vikram Kumar", "Devendra Jha", "Anil Kumble", "Zaheer Khan", "Harbhajan Singh", "Javagal Srinath", "MS Dhoni"],
   opponentXI: ["J. Root", "J. Bairstow", "B. Stokes", "J. Buttler", "L. Livingstone", "M. Ali", "S. Curran", "C. Woakes", "A. Rashid", "J. Archer", "M. Wood"],
+  substitutes: ["Sachin Tendulkar", "Sourav Ganguly", "Rahul Dravid", "VVS Laxman"],
+  opponentSubs: ["H. Brook", "D. Malan", "P. Salt", "D. Willey"],
   status: "live",
   dismissals: [
     { batsman: "Anil Kumble", type: "Caught", fielder: "J. Buttler", bowler: "J. Archer", over: 12, ball: 4 },
@@ -141,12 +145,14 @@ export default function LiveScorePage() {
       try {
         const q = query(
           collection(db, "matches"), 
-          where("status", "==", "completed"),
           orderBy("date", "desc"),
-          limit(3)
+          limit(10)
         );
         const snapshot = await getDocs(q);
-        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const list = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() as any }))
+          .filter(match => match.status === "completed")
+          .slice(0, 3);
         setPastMatches(list);
       } catch (err) {
         console.warn("Could not load past matches: ", err);
@@ -434,6 +440,18 @@ export default function LiveScorePage() {
                         );
                       })}
                     </ul>
+                    {activeMatch.substitutes && activeMatch.substitutes.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/40">
+                        <p className="text-[9px] font-black uppercase text-slate-450 mb-1.5 tracking-wider">Substitutes</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {activeMatch.substitutes.map(name => (
+                            <span key={name} className="px-2 py-0.5 rounded bg-white/40 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 text-slate-600 dark:text-slate-300 text-[10px] font-bold">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Opponent Squad */}
@@ -477,6 +495,18 @@ export default function LiveScorePage() {
                         );
                       })}
                     </ul>
+                    {activeMatch.opponentSubs && activeMatch.opponentSubs.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/40">
+                        <p className="text-[9px] font-black uppercase text-slate-455 mb-1.5 tracking-wider">Substitutes</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {activeMatch.opponentSubs.map(name => (
+                            <span key={name} className="px-2 py-0.5 rounded bg-white/40 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 text-slate-600 dark:text-slate-300 text-[10px] font-bold">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

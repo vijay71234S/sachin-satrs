@@ -46,9 +46,10 @@ export async function verifyAdmin(request: Request) {
     return decodedToken;
   } catch (error: any) {
     console.error("Token verification failed:", error);
-    if (error.message && (error.message.includes("Forbidden") || error.message.includes("Unauthorized"))) {
+    const msg = error?.message || "";
+    if (msg.includes("Forbidden") || msg.includes("Unauthorized")) {
       throw error;
     }
-    throw new Error(`Unauthorized: ${error.message || "Token verification failed"}`);
+    throw new Error(`Unauthorized: ${msg || "Token verification failed"}`);
   }
 }

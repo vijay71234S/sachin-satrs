@@ -43,6 +43,7 @@ const matchSetupSchema = z.object({
   tossWinner: z.string().min(1, "Select toss winner"),
   batFirst: z.string().min(1, "Select who bats first"),
   opponentXIRaw: z.string().min(10, "List opponent XI separated by commas"),
+  opponentSubsRaw: z.string().optional().default(""),
   opponentCaptain: z.string().min(2, "Opponent Captain is required"),
   opponentViceCaptain: z.string().min(2, "Opponent Vice Captain is required"),
   opponentWicketKeeper: z.string().min(2, "Opponent Wicketkeeper is required"),
@@ -63,6 +64,7 @@ export default function AdminLiveScoreSetup() {
   
   // Selected Sachin Stars players (Exactly 11)
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [selectedSubs, setSelectedSubs] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Check if there is already an active match live
@@ -125,6 +127,7 @@ export default function AdminLiveScoreSetup() {
       tossWinner: "Sachin Stars",
       batFirst: "Stars",
       opponentXIRaw: "J. Root, J. Bairstow, B. Stokes, J. Buttler, L. Livingstone, M. Ali, S. Curran, C. Woakes, A. Rashid, J. Archer, M. Wood",
+      opponentSubsRaw: "H. Brook, D. Malan, P. Salt",
       opponentCaptain: "B. Stokes",
       opponentViceCaptain: "J. Buttler",
       opponentWicketKeeper: "J. Buttler",
@@ -135,6 +138,12 @@ export default function AdminLiveScoreSetup() {
   // Watch Opponent playing XI to parse players on-the-spot
   const opponentXIRaw = watch("opponentXIRaw") || "";
   const parsedOpponentPlayers = opponentXIRaw
+    .split(",")
+    .map(name => name.trim())
+    .filter(name => name.length > 0);
+
+  const opponentSubsRaw = watch("opponentSubsRaw") || "";
+  const parsedOpponentSubs = opponentSubsRaw
     .split(",")
     .map(name => name.trim())
     .filter(name => name.length > 0);
@@ -156,12 +165,19 @@ export default function AdminLiveScoreSetup() {
       if (selectedCaptain === name) setValue("captain", "");
       if (selectedViceCaptain === name) setValue("viceCaptain", "");
       if (selectedWicketKeeper === name) setValue("wicketKeeper", "");
+    } else if (selectedSubs.includes(name)) {
+      const updated = selectedSubs.filter(p => p !== name);
+      setSelectedSubs(updated);
     } else {
-      if (selectedPlayers.length >= 11) {
-        toast.error("You can select a maximum of 11 players.");
-        return;
+      if (selectedPlayers.length < 11) {
+        setSelectedPlayers([...selectedPlayers, name]);
+      } else {
+        if (selectedSubs.length >= 5) {
+          toast.error("You can select a maximum of 5 substitutes.");
+          return;
+        }
+        setSelectedSubs([...selectedSubs, name]);
       }
-      setSelectedPlayers([...selectedPlayers, name]);
     }
   };
 
@@ -188,6 +204,8 @@ export default function AdminLiveScoreSetup() {
     try {
       const playingXI = selectedPlayers;
       const opponentXI = parsedOpponentPlayers;
+      const substitutes = selectedSubs;
+      const opponentSubs = parsedOpponentSubs;
       
       const matchDoc = {
         opponent: data.opponent,
@@ -205,6 +223,8 @@ export default function AdminLiveScoreSetup() {
         batFirst: data.batFirst === "Stars",
         playingXI,
         opponentXI,
+        substitutes,
+        opponentSubs,
         status: "live",
         // Scorecard stats
         runs: 0,
@@ -385,15 +405,19 @@ export default function AdminLiveScoreSetup() {
                   {/* Grid of Players */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-60 overflow-y-auto p-1 border border-slate-100 dark:border-slate-800 rounded-xl">
                     {filteredPlayers.map((player) => {
-                      const isSelected = selectedPlayers.includes(player.name);
+                      const isPlaying = selectedPlayers.includes(player.name);
+                      const isSub = selectedSubs.includes(player.name);
+                      const isSelected = isPlaying || isSub;
                       return (
                         <div
                           key={player.id}
                           onClick={() => handleTogglePlayer(player.name)}
                           className={`p-3 rounded-xl border transition-all cursor-pointer relative flex flex-col justify-between ${
-                            isSelected 
+                            isPlaying 
                               ? "border-blue-500 bg-blue-500/5 dark:bg-blue-500/10 shadow-sm" 
-                              : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300"
+                              : isSub
+                                ? "border-orange-500 bg-orange-500/5 dark:bg-orange-500/10 shadow-sm"
+                                : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300"
                           }`}
                         >
                           <div className="flex items-start justify-between">
@@ -404,9 +428,14 @@ export default function AdminLiveScoreSetup() {
                                 <User size={16} className="text-slate-400" />
                               )}
                             </div>
-                            {isSelected && (
-                              <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center absolute top-2 right-2">
-                                <Check size={12} className="stroke-[3]" />
+                            {isPlaying && (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-500 text-white absolute top-2 right-2 uppercase">
+                                XI
+                              </span>
+                            )}
+                            {isSub && (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-orange-500 text-white absolute top-2 right-2 uppercase">
+                                SUB
                               </span>
                             )}
                           </div>
@@ -423,21 +452,41 @@ export default function AdminLiveScoreSetup() {
                     })}
                   </div>
 
-                  {/* Horizontal list of selected players */}
-                  {selectedPlayers.length > 0 && (
-                    <div className="p-3 bg-slate-500/5 dark:bg-slate-950/20 rounded-xl">
-                      <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Selected Squad Roster:</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedPlayers.map((name, i) => (
-                          <span 
-                            key={name}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0A3D91]/10 text-[#0A3D91] dark:text-[#D9ECFF]"
-                          >
-                            <span className="text-[9px] mr-1 opacity-60 font-black">{i + 1}</span>
-                            {name}
-                          </span>
-                        ))}
-                      </div>
+                  {/* Horizontal list of selected players and substitutes */}
+                  {(selectedPlayers.length > 0 || selectedSubs.length > 0) && (
+                    <div className="p-4 bg-slate-500/5 dark:bg-slate-950/20 rounded-xl space-y-3">
+                      {selectedPlayers.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-slate-400 mb-1.5">Playing XI Roster ({selectedPlayers.length} / 11):</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedPlayers.map((name, i) => (
+                              <span 
+                                key={name}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0A3D91]/10 text-[#0A3D91] dark:text-[#D9ECFF]"
+                              >
+                                <span className="text-[9px] mr-1 opacity-60 font-black">{i + 1}</span>
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {selectedSubs.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-slate-400 mb-1.5">Substitutes ({selectedSubs.length} / 5):</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedSubs.map((name, i) => (
+                              <span 
+                                key={name}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-500/10 text-orange-600 dark:text-orange-355"
+                              >
+                                <span className="text-[9px] mr-1 opacity-60 font-black">{i + 1}</span>
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -525,6 +574,33 @@ export default function AdminLiveScoreSetup() {
                   <div className="flex flex-wrap gap-1">
                     {parsedOpponentPlayers.map((name, i) => (
                       <span key={name} className="px-2 py-0.5 bg-[#FF6B00]/10 text-[#FF6B00] text-xs rounded-full font-bold">
+                        <span className="text-[9px] opacity-60 mr-1">{i + 1}</span>
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4">
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                  Opponent Substitutes (Comma separated)
+                </label>
+                <textarea
+                  {...register("opponentSubsRaw")}
+                  rows={2}
+                  className="block w-full p-3 bg-slate-500/5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none dark:text-white font-semibold"
+                  placeholder="e.g. H. Brook, D. Malan, P. Salt"
+                />
+              </div>
+
+              {/* Parsed Opponent Substitutes Checklist */}
+              {parsedOpponentSubs.length > 0 && (
+                <div className="mt-3 p-3 bg-slate-500/5 dark:bg-slate-955/20 rounded-xl">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1.5">Parsed Opponent Substitutes ({parsedOpponentSubs.length} players):</p>
+                  <div className="flex flex-wrap gap-1">
+                    {parsedOpponentSubs.map((name, i) => (
+                      <span key={name} className="px-2 py-0.5 bg-slate-450/10 text-slate-500 text-xs rounded-full font-bold">
                         <span className="text-[9px] opacity-60 mr-1">{i + 1}</span>
                         {name}
                       </span>

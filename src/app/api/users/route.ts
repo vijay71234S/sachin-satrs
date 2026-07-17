@@ -16,9 +16,11 @@ export async function GET(request: Request) {
     return NextResponse.json(users);
   } catch (error: any) {
     console.error("API GET Users error:", error);
+    const errorMessage = error?.message || "Failed to fetch users";
+    const status = errorMessage.includes("Forbidden") ? 403 : errorMessage.includes("Unauthorized") ? 401 : 500;
     return NextResponse.json(
-      { error: error.message || "Failed to fetch users" },
-      { status: error.message.includes("Forbidden") ? 403 : error.message.includes("Unauthorized") ? 401 : 500 }
+      { error: errorMessage },
+      { status }
     );
   }
 }
@@ -110,9 +112,11 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error("API POST User error:", error);
+    const errorMessage = error?.message || "Failed to create user";
+    const status = errorMessage.includes("Forbidden") ? 403 : errorMessage.includes("Unauthorized") ? 401 : 500;
     return NextResponse.json(
-      { error: error.message || "Failed to create user" },
-      { status: error.message.includes("Forbidden") ? 403 : error.message.includes("Unauthorized") ? 401 : 500 }
+      { error: errorMessage },
+      { status }
     );
   }
 }

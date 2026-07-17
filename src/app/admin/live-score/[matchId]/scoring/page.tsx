@@ -32,6 +32,8 @@ interface MatchDetails {
   opponentWicketKeeper?: string;
   playingXI: string[];
   opponentXI: string[];
+  substitutes?: string[];
+  opponentSubs?: string[];
   tossWinner: string;
   batFirst: boolean;
   status: "live" | "completed" | "upcoming";
@@ -489,6 +491,58 @@ export default function AdminScoringPage() {
     toast.success("Batsman positions swapped.");
   };
 
+  // Handle Player Substitution
+  const handleSubstitute = async (team: "stars" | "opponent") => {
+    if (!match) return;
+
+    const outEl = document.getElementById(team === "stars" ? "stars-out-select" : "opp-out-select") as HTMLSelectElement;
+    const inEl = document.getElementById(team === "stars" ? "stars-in-select" : "opp-in-select") as HTMLSelectElement;
+    
+    const playerOut = outEl?.value;
+    const playerIn = inEl?.value;
+    
+    if (!playerOut || !playerIn) {
+      toast.error("Please select both the player leaving and the substitute entering.");
+      return;
+    }
+    
+    const updated = { ...match };
+    
+    if (team === "stars") {
+      updated.playingXI = (updated.playingXI || []).map(name => name === playerOut ? playerIn : name);
+      updated.substitutes = (updated.substitutes || []).map(name => name === playerIn ? playerOut : name);
+      
+      if (updated.striker && updated.striker.name === playerOut) {
+        updated.striker = { ...updated.striker, name: playerIn };
+      }
+      if (updated.nonStriker && updated.nonStriker.name === playerOut) {
+        updated.nonStriker = { ...updated.nonStriker, name: playerIn };
+      }
+      if (updated.captain === playerOut) updated.captain = playerIn;
+      if (updated.viceCaptain === playerOut) updated.viceCaptain = playerIn;
+      if (updated.wicketKeeper === playerOut) updated.wicketKeeper = playerIn;
+    } else {
+      updated.opponentXI = (updated.opponentXI || []).map(name => name === playerOut ? playerIn : name);
+      updated.opponentSubs = (updated.opponentSubs || []).map(name => name === playerIn ? playerOut : name);
+      
+      if (updated.bowler && updated.bowler.name === playerOut) {
+        updated.bowler = { ...updated.bowler, name: playerIn };
+      }
+      if (updated.opponentCaptain === playerOut) updated.opponentCaptain = playerIn;
+      if (updated.opponentViceCaptain === playerOut) updated.opponentViceCaptain = playerIn;
+      if (updated.opponentWicketKeeper === playerOut) updated.opponentWicketKeeper = playerIn;
+    }
+    
+    try {
+      await updateFirestoreMatch(updated);
+      if (outEl) outEl.value = "";
+      if (inEl) inEl.value = "";
+      toast.success(`Substituted ${playerOut} with ${playerIn} successfully!`);
+    } catch (err: any) {
+      toast.error("Failed to perform substitution: " + err.message);
+    }
+  };
+
   // Lists of available batsmen remaining in Playing XI to pick from on dismissals
   const remainingBatsmen = match.playingXI.filter(
     (name) => name !== match.striker.name && name !== match.nonStriker.name
@@ -752,6 +806,127 @@ export default function AdminScoringPage() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Squad Substitutions Panel */}
+        <div className="glass-panel p-6 rounded-2xl border border-white/20 shadow-md space-y-4 animate-fade-in">
+          <h3 className="text-xs font-black uppercase text-[#FF6B00] tracking-widest flex items-center">
+            Squad Substitutions
+          </h3>
+          <p className="text-xs text-slate-400">
+            Swap playing XI roster members with configured substitute players. Active roles (Batsmen, Bowlers, Leaders) are updated dynamically.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            {/* Stars Subs */}
+            <div className="space-y-3 p-4 bg-slate-500/5 dark:bg-slate-900/10 rounded-xl border border-slate-100 dark:border-slate-800/40">
+              <p className="text-xs font-bold text-[#0A3D91] dark:text-[#D9ECFF] uppercase pb-1 border-b border-slate-200/50 dark:border-slate-800">
+                Sachin Stars
+              </p>
+              {match.substitutes && match.substitutes.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Playing XI Out</label>
+                      <select
+                        id="stars-out-select"
+                        className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none dark:text-white text-slate-700 font-medium"
+                      >
+                        <option value="">-- Out --</option>
+                        {match.playingXI.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Substitute In</label>
+                      <select
+                        id="stars-in-select"
+                        className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none dark:text-white text-slate-700 font-medium"
+                      >
+                        <option value="">-- In --</option>
+                        {match.substitutes.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 pt-1.5 flex-wrap">
+                    <div className="flex flex-wrap gap-1 items-center">
+                      <span className="text-[10px] font-bold text-slate-450 uppercase mr-1">Bench:</span>
+                      {match.substitutes.map(name => (
+                        <span key={name} className="px-2 py-0.5 rounded bg-slate-500/10 text-slate-600 dark:text-slate-350 text-[10px] font-bold">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => handleSubstitute("stars")}
+                      className="px-3.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm transition-colors shrink-0 font-sans"
+                    >
+                      Make Sub
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">No substitutes configured for Sachin Stars.</p>
+              )}
+            </div>
+
+            {/* Opponent Subs */}
+            <div className="space-y-3 p-4 bg-slate-500/5 dark:bg-slate-900/10 rounded-xl border border-slate-100 dark:border-slate-800/40">
+              <p className="text-xs font-bold text-[#FF6B00] uppercase pb-1 border-b border-slate-200/50 dark:border-slate-800">
+                {match.opponent}
+              </p>
+              {match.opponentSubs && match.opponentSubs.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Playing XI Out</label>
+                      <select
+                        id="opp-out-select"
+                        className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none dark:text-white text-slate-700 font-medium"
+                      >
+                        <option value="">-- Out --</option>
+                        {match.opponentXI.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Substitute In</label>
+                      <select
+                        id="opp-in-select"
+                        className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none dark:text-white text-slate-700 font-medium"
+                      >
+                        <option value="">-- In --</option>
+                        {match.opponentSubs.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 pt-1.5 flex-wrap">
+                    <div className="flex flex-wrap gap-1 items-center">
+                      <span className="text-[10px] font-bold text-slate-455 uppercase mr-1">Bench:</span>
+                      {match.opponentSubs.map(name => (
+                        <span key={name} className="px-2 py-0.5 rounded bg-slate-500/10 text-slate-600 dark:text-slate-350 text-[10px] font-bold">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => handleSubstitute("opponent")}
+                      className="px-3.5 py-1.5 bg-[#FF6B00] hover:bg-[#E05E00] text-white font-bold text-xs rounded-xl shadow-sm transition-colors shrink-0 font-sans"
+                    >
+                      Make Sub
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">No substitutes configured for {match.opponent}.</p>
+              )}
             </div>
           </div>
         </div>

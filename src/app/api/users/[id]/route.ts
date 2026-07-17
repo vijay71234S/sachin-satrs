@@ -57,9 +57,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ uid: id, ...updatedProfile });
   } catch (error: any) {
     console.error("API PUT User error:", error);
+    const errorMessage = error?.message || "Failed to update user";
+    const status = errorMessage.includes("Forbidden") ? 403 : errorMessage.includes("Unauthorized") ? 401 : 500;
     return NextResponse.json(
-      { error: error.message || "Failed to update user" },
-      { status: error.message.includes("Forbidden") ? 403 : error.message.includes("Unauthorized") ? 401 : 500 }
+      { error: errorMessage },
+      { status }
     );
   }
 }
@@ -86,9 +88,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ message: "User account deleted successfully", uid: id });
   } catch (error: any) {
     console.error("API DELETE User error:", error);
+    const errorMessage = error?.message || "Failed to delete user";
+    const status = errorMessage.includes("Forbidden") ? 403 : errorMessage.includes("Unauthorized") ? 401 : 500;
     return NextResponse.json(
-      { error: error.message || "Failed to delete user" },
-      { status: error.message.includes("Forbidden") ? 403 : error.message.includes("Unauthorized") ? 401 : 500 }
+      { error: errorMessage },
+      { status }
     );
   }
 }
@@ -111,9 +115,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ message: "Password updated successfully", uid: id });
   } catch (error: any) {
     console.error("API POST Reset Password error:", error);
+    const errorMessage = error?.message || "Failed to reset password";
+    const status = errorMessage.includes("Forbidden") ? 403 : errorMessage.includes("Unauthorized") ? 401 : 500;
     return NextResponse.json(
-      { error: error.message || "Failed to reset password" },
-      { status: error.message.includes("Forbidden") ? 403 : error.message.includes("Unauthorized") ? 401 : 500 }
+      { error: errorMessage },
+      { status }
     );
   }
 }
